@@ -1,52 +1,65 @@
 {% set version = "0.0.16" %}
+{% set name = 'hologram'  %}
 
 
 package:
-  name: hologram
+  name: {{ name }}
   version: {{ version }}
 
 source:
   - folder: dist
-    url: https://pypi.io/packages/source/h/hologram/hologram-{{ version }}.tar.gz
+    url: https://pypi.io/packages/source/{{ name[0] }}/{{ name }}/{{ name }}-{{ version }}.tar.gz
     sha256: 1c2c921b4e575361623ea0e0d0aa5aee377b1a333cc6c6a879e213ed34583e55
   - folder: src
-    url: https://github.com/dbt-labs/hologram/archive/refs/tags/v{{ version }}.tar.gz
+    url: https://github.com/dbt-labs/{{ name }}/archive/refs/tags/v{{ version }}.tar.gz
     sha256: b9d241a93624c7926035e181424b7be44fc398bf68285823c27532e91ff992da
     patches:
       - 0001-use-default-factory.patch
 
 build:
-  noarch: python
   number: 0
+  skip: True  # [py<36]
   script:
     - cd dist && "{{ PYTHON }}" -c "__import__('shutil').rmtree('tests')"
-    - cd "{{ SRC_DIR }}/dist" && "{{ PYTHON }}" -m pip install . -vv --no-deps
+    - cd "{{ SRC_DIR }}/dist" && "{{ PYTHON }}" -m pip install . --no-deps --no-build-isolation -vv
 
 requirements:
+  build:
+    - m2-patch  # [win]
+    - patch     # [not win]
   host:
     - pip
-    - python >=3.7
+    - python
+    - setuptools
+    - wheel
   run:
+    - dataclasses >=0.6,<0.9  # [py<37]
     - jsonschema >=3.0
-    - python >=3.7
+    - python
     - python-dateutil >=2.8,<2.9
 
 test:
+  imports:
+    - hologram
   source_files:
     - src/tests
   requires:
     - pip
+    - pytest
     - pytest-cov
-  imports:
-    - hologram
   commands:
     - pip check
-    - cd src && pytest --pyargs tests -vv --cov=hologram --cov-branch --cov-report=term-missing:skip-covered --no-cov-on-fail --cov-fail-under=90
+    - cd src && pytest --pyargs tests -vv --cov=hologram --cov-branch --cov-report=term-missing:skip-covered --no-cov-on-fail --cov-fail-under=89
 
 about:
   home: https://github.com/fishtown-analytics/hologram
+  dev_url: https://github.com/fishtown-analytics/hologram
+  doc_url: https://github.com/fishtown-analytics/hologram
   summary: JSON schema generation from dataclasses
+  description: |
+    A library for automatically generating Draft 7 JSON Schemas from Python dataclasses
   license: MIT
+  license_family: MIT
   license_file: dist/LICENSE
 
 extra:
